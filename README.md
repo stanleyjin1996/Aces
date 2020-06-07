@@ -21,4 +21,4 @@ Using market regimes, changepoints and anomaly detection in QWIM
 4. Dynamic Allocation or Diversification: A Regime-Based Approach to Multiple Assets.
    In this article, MSCI World index has been used to generate signals. HMM is used to detect regime changes. In addition, more assets have
    been considered in the portfolio to account for diversification. We leave for future research to show whether the results presented in
-   this article can be improved by including information from the other asset classses in the regime-detection process.
+   this article can be improved by including information from the other asset classses(ex. momentum index) in the regime-detection process.
