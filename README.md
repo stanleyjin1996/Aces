@@ -24,9 +24,13 @@ Using market regimes, changepoints and anomaly detection in QWIM
    this article can be improved by including information from the other asset classses(ex. momentum index) in the regime-detection process.
 
 ## Ideas from regime-based investing references
-1. Regime Shifts and Markov-Switching Models: Implications for Dynamic Strategies
+1. Regime Shifts and Markov-Switching Models: Implications for Dynamic Strategies.
    In this article, FX market turbulence, Equity market turbulence, Inflation, Gross National Product has been used to generate signals.
    HMM is used to detect regime shifts. Further research could be finding other macro variables that link to asset performance.
+2. Optimizing asset allocations to market regimes.
+   In this article, market regime indicator is composed of three market factors: equity implied volatility factor, currency implied 
+   volatility factor, credit spread factor. Market regimes are defined into 5 categories. Capital is allocated among growth assets, 
+   moderate assets and defensive assets depending on different market regimes.
 
 ## Some topics to be considered
 1. Using different unsupervised learning algorithms to detect regime shifts. For example, K-means clustering, Mean-shift clustering,
