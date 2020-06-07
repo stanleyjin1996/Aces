@@ -28,3 +28,6 @@ Using market regimes, changepoints and anomaly detection in QWIM
    In this article, FX market turbulence, Equity market turbulence, Inflation, Gross National Product has been used to generate signals.
    HMM is used to detect regime shifts. Further research could be finding other macro variables that link to asset performance.
 
+## Some topics to be considered
+1. Using different unsupervised learning algorithms to detect regime shifts. For example, K-means clustering, Mean-shift clustering,
+   DBSCAN, EM clustering using GMM.
