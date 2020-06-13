@@ -38,7 +38,7 @@ Using market regimes, changepoints and anomaly detection in QWIM
    **assume these four variables are normally distributed and uncorrelated. However, the factors are actually positively correlated**
    **especially during stressful period. Further improvement could be finding a remedy for this.**
 
-## Some topics to be considered
+## Some topics to be considered for the project
 1. **Using different unsupervised learning algorithms to detect regime shifts. For example, K-means clustering, Mean-shift clustering,**
    **DBSCAN, EM clustering using GMM.**
 
