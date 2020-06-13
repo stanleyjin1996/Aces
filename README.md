@@ -26,12 +26,21 @@ Using market regimes, changepoints and anomaly detection in QWIM
 ## Ideas from regime-based investing references
 1. Regime Shifts and Markov-Switching Models: Implications for Dynamic Strategies.
    In this article, FX market turbulence, Equity market turbulence, Inflation, Gross National Product has been used to generate signals.
-   HMM is used to detect regime shifts. Further research could be finding other macro variables that link to asset performance.
+   HMM is used to detect regime shifts. **Further research could be finding other macro variables that link to asset performance.**
 2. Optimizing asset allocations to market regimes.
    In this article, market regime indicator is composed of three market factors: equity implied volatility factor, currency implied 
    volatility factor, credit spread factor. Market regimes are defined into 5 categories. Capital is allocated among growth assets, 
    moderate assets and defensive assets depending on different market regimes.
+3. Dynamic Strategic Asset Allocation: Risk and Return across Economic Regimes.
+   In this article, authors consider a regime model which uses four economic indicators (the credit spread, earnings yield, ISM,
+   unemployment rate) to identify four phases of the economic cycle (expansion, peak, recession and recovery). More specifically,
+   they standardize the foru economic variables and add them together and divide by the square root of 4. **It turns out that they** 
+   **assume these four variables are normally distributed and uncorrelated. However, the factors are actually positively correlated**
+   **especially during stressful period. Further improvement could be finding a remedy for this.**
 
 ## Some topics to be considered
-1. Using different unsupervised learning algorithms to detect regime shifts. For example, K-means clustering, Mean-shift clustering,
-   DBSCAN, EM clustering using GMM.
+1. **Using different unsupervised learning algorithms to detect regime shifts. For example, K-means clustering, Mean-shift clustering,**
+   **DBSCAN, EM clustering using GMM.**
+
+2. **Using different supervised learning algorithms to detect regime shifts. Features are economic vairables (the credit spread, earnings**
+   **yield, ISM, unemployment rate) and target is NBER indicator.**
