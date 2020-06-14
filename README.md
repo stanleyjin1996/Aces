@@ -37,6 +37,8 @@ Using market regimes, changepoints and anomaly detection in QWIM
    they standardize the foru economic variables and add them together and divide by the square root of 4. **It turns out that they** 
    **assume these four variables are normally distributed and uncorrelated. However, the factors are actually positively correlated**
    **especially during stressful period. Further improvement could be finding a remedy for this.**
+5. Regime Shifts: Implications for Dynamic Strategies. The authos show how to apply Markov-switching models to forecast regimes in
+   market turbulance, inflation, economic growth. Details regarding the model and algorithm are provided.
 
 ## Some topics to be considered for the project
 1. **Using different unsupervised learning algorithms to detect regime shifts. For example, K-means clustering, Mean-shift clustering,**
