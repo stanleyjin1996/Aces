@@ -1,0 +1,109 @@
+I. Main Reference
+
+(2014 )Dragon-kings and Predictions: Diagnostics and Forecasts for the World Financial Crisis
+Main Purpose:
+Method:
+Result:
+Conclusion:
+Ideas:
+
+
+(2015) Regime-Based Versus Static Asset Allocation: Letting the Data Speak 
+1. Main Purpose:  This article examines whether regime-based asset allocation (RBAA) can effectively respond to financial regimes, in an effort to provide better long-term results when compared to static approaches. 
+2. Method:  This paper identifies regimes in the stock returns using a regime-switching model and let the asset allocation depend on the identified regime. 
+3. Model:  Hidden Markov Model. This paper extended the classical Gaussian HMM by considering sojourn time distributions other than the memory-less geometric distribution, conditional distributions other than the Gaussian distribution, and a continuous-time formulation as an alternative to the dominating discrete-time models. The regime-switching model is still a two-state HMM with Gaussian conditional distributions, but one that adapts to the time- varying behavior of the underlying process in an effort to produce more robust state estimates. Exponentially decreasing weights (more in recent observation) 
+4. Result: Use the above method on several strategies Sharpe Ratio: Bond index > Stocks-Bonds > Static > long the stock index in the low-volatility state and short the stock index in the high-volatility state > Stock Index
+5. Conclusion: Regime based asset allocation is more profitable then a static one
+
+(2015) Financial bubbles: mechanisms and diagnostics 
+1. Main Purpose:  Detect bubbles (disproportionate financialisation)
+2. Method: A robust diagnostic of dynamic non-sustainable overvaluation. 
+3. Model: Log-Periodic Power Law ()
+
+(2016) Detecting change points in VIX and S&P 500: A new approach to dynamic asset allocation 
+1. Main Purpose: Purpose a new approach to dynamic asset allocation, examined on VIX and S&P 500 
+2. Method: Nonparametric model, use statistical tests compared to a threshold to detect location or scale shift, then detect change points (no assumption needed, data distribution or number of regimes); test on VIX and S&P 500
+3. Model: eg. T-test, F-test, Mood test, etc.
+4. Result: Focusing scale shift gives better result. Found 27 change points using Mood test on scale of two series; best performing strategy is the switching strategy, investing in S&P 500 index in low volatility state and putting cash in high volatility state
+5. Conclusion:
+	DAA is medium to long-term horizon, improving risk-adjusted return and reducing tail risk compared to SAA
+
+(2016) LPPLS bubble indicators over two centuries of the S&P 500 index 
+1. Main Purpose: The aim of this paper is to present novel tests for the early causal diagnostic of positive and negative bubbles in the S&P 500 index and the detection of End-of-Bubble signals with their corresponding confidence levels
+2. Method: Using two centuries’ data
+3. Model: Log-Periodic Power Law Singularity, exponential curve fitting(EXCF) and generalized sup augmented Dickey Fuller(GSADF)
+4. Result: Detected bubbles are compared with historical bubble events. 
+5. Conclusion: Among 19 events documented as bear market, 8 are positive bubbles using LPPLS. EXCF and GSADF detect 6 out of 8. GSADF method tends to signal fewer bubbles than the other two methods, while the EXCF method has the tendency to falsely detect too many bubbles. Both the GSADF and the EXCF methods do not identify negative bubbles and give higher number of false signals compared to the DS LPPLS method.  
+(2017) Dynamic portfolio optimization across hidden market regimes 
+1. Main Purpose: This paper aims to dynamically optimize the portfolio under different regimes
+2. Method: This paper uses model predictive control to dynamically optimize the portfolio based on forecasts of the mean and variance of financial returns from a hidden Markov Model with time-caring parameters.
+3. Model: Adaptive HMM MPC approach to dynamic portfolio optimization: (i) Update HMM parameters based on the most recent returns  (ii) Forecast the mean and variance K steps into the future ⋆⋆  (iii) Compute an optimal sequence of trades ut , . . . , ut+K−1 based on the current portfolio ⋆  (iv) Execute the 􏰅first trade, ut , in the sequence and return to step i
+4. Result: Comparison among MPC, SAA and RBAA on some indexes
+5. Conclusion: MPC realized higher risk-adjusted return compared to buy-and-hold in stock index accounting for traction cost and imposing trading penalty could improve robutness. MPC outperforms RBAA which is based on a static decision rule, with only stocks and zero-interest cash. 
+6. Ideas: MPC could be extended to multi-asset portfolios. It is also possible to specify a model for the parameters changes
+
+(2017) Birth or burst of financial bubbles: which one is easier to diagnose?
+1. Main Purpose: This paper presented systematic tests to detect the beginning and end of a bubble.
+2. Method: Use LPPLS to estimate the end of bubble; Use cost function include the beginning time and Fisher Information matrix to estimate the beginning of the bubble; Conduct tests on synthetic data and four historical bubble cases
+3. Model: LPPLS, One of the quality of the LPPLS model is to contain the end time tc of the bubble as a defining parameter, which can thus be estimated over various time windows. The cost function quantifying the quality of fit of the LPPLS model has been extended to include t1. Using the Fisher Information matrix, it quantified the parameter uncertainty associated with the determination of both beginning and ending time.
+4. Result:
+5. Conclusion: The beginning of bubbles is much better constrained than their end. 
+
+(2017) Modified profile likelihood inference and interval forecast of the burst of financial bubbles 
+1. Main Purpose: Using modified profile likelihood to deal with non-linear financial models and better estimate the end time of bubble in the LPPLS model 
+2. Method: This paper uses likelihood inference approach to determine tc, which takes into account the impact of the other nonlinear parameters (nuisance parameters ) for the correct adjustment of the uncertainty on tc (interval estimation rather than point estimation). It also develops a multi-scale profile likelihood analysis to visualize the structure of the financial data at different scales (typically from 100 to 750 days). 
+3. Model: LPPLS, modified likelihood profile
+4. Result: Modified profile likelihood method dramatically reduces the number of local extrema by constructing much simpler smoother log-likelihood landscapes. 
+5. Conclusion: It is possible to bypass the strong nonlinearity of the model by using a very precise approximation for the modified profile likelihood. This has allowed us to provide a systematic construction of the parameter estimation uncertainties and of the corresponding likelihood intervals, both for the target parameter tc and for the other so-called nuisance parameters. 
+
+(2017) Can We Use Volatility to Diagnose Financial Bubbles? Lessons from 40 Historical Bubbles
+1. Main Purpose: 40 Case studies on each bubble to explore whether it is possible to use volatility to diagnose financial bubbles
+2. Method: Graph
+3. Result:
+4. Graph
+5. Conclusion: Volatility is not a reliable indicator of the maturation towards the end of a bubble and of its impeding crash. Volatility exhibits no consistent behavior. Sometimes it does increase, sometimes it decreases, and most of the time it barely changes as the bubble develops. 
+
+(2018) Regime Shifts in Excess Stock Return Predictability: An Out-of-Sample Portfolio Analysis
+1. Main Purpose: This paper examines whether a few standard valuation ratios (the dividend– price (DP), earning–price (EP), and book- to-market (BM) ratios) may predict the (conditional) aggregate equity risk premium at different horizons using regime-switching models to account for the fact that most predictive relationships are subject to statistical instability. 
+2. Method: The forecast are derived from several statistical models. Then, the forecasts generated through this broad set of models are then tested within three different asset allocation frameworks. 
+3. Model: Statistical Models: simple regressions, Markov switching (MS) regressions, MS vector autoregressions (MSVAR)  Asset Allocation Frameworks: simple switching strategies, static mean– variance (MV) strategies, dynamic strategies 
+4. Result: Table
+5. Conclusion:  The implementation of more sophisticated frameworks that also consider higher moments of excess returns does not improve the performance of strategies that exploit predictability. Most predictive relationships are time varying and that the use of regime-switching models to capture such instability may lead to risk-adjusted gains. 
+6. Ideas: Examine the extent to which our results may apply to different predictors (e.g., other accounting ratios adjusted-for-growth, as in Campbell and Thompson [2008]) and datasets. 
+
+(2018) Dynamic Allocation or Diversification: A Regime-Based Approach to Multiple Assets 
+	Main Purpose:  	Similar to (2015) Regime-Based Versus Static Asset Allocation: Letting the Data Speak, but extend to multiple assets 		universe
+
+(2018) On the predictability of stock market bubbles: evidence from LPPLS confidence multi-scale indicators
+Main Purpose:
+Method:
+Result:
+Conclusion:
+Ideas:
+
+(2018) Are bitcoin bubbles predictable? combining a generalized metcalfe’s law and the LPPLS model
+Main Purpose:
+Method:
+Result:
+Conclusion:
+Ideas:
+
+(2019) Factors in Time: Fine-Tuning Hedge Fund Replication 
+1. Main Purpose: Use Ridge regression to replace the traditional linear regression factor models
+2. Method: The traditional multi-factor model has several shortcomings: overfitting, multicollinearity, models built using a single sample may fail to capture the evolution of hedge fund exposures over time. 
+3. Model: Ridge regression
+4. Conclusion: Ridge regression is more robust
+
+II. Regime-Based reference
+
+(2017) Regime shifts and stock return predictability
+
+(2012) MARKOWITZ VERSUS REGIME SWITCHING: AN EMPIRICAL APPROACH 
+1. Main Purpose:  Markov Switching + Markowtz mean variance model
+2. Method: Combination of models
+3. Model Markov Switching + Markowtz mean variance model
+4. Conclusion: Better than only mean variance 
+
+
+
+Regime Detection: Markov Switching, Machine Learning: 
