@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy a np
 import yfinance as yf
+from sklearn.decomposition import PCA
 
 
 def fetch_sector(start, end):
@@ -39,3 +41,29 @@ def fetch_sector(start, end):
 
 
 df_price, df_return = fetch_sector("2010-01-01", "2020-07-11")
+
+#Absorption Ratio
+def absorption_ratio(data,is_returns=False,lookback=500,halflife=250,num_pc=5):
+    if is_returns:
+        ret = data
+    else:
+        ret = np.log(df_price).diff().dropna()
+    
+    ar = []
+    for i in range(lookback,len(ret)+1):
+        model = PCA(n_components=num_pc).fit(ret[i-lookback:i])
+        pc = pd.DataFrame(model.transform(ret))
+        #variance explained by first n principal components
+        pc_var = pc.ewm(halflife=halflife,min_periods=lookback).var().sum().sum()
+        #variance in original data
+        ret_var = ret.ewm(halflife=halflife,min_periods=lookback).var().sum().sum()
+        #absorption ratio
+        ar.append(pc_var/ret_var)
+        
+    ar = pd.DataFrame(ar)
+    ar.index = ret.index[lookback-1:]
+    ar.columns = ['AR']
+    
+    return ar
+ar = absorption_ratio(df_price,False,250,125,4)
+ar.plot()
