@@ -478,7 +478,7 @@ class Portfolio:
         """
 
         df = portfolio.copy()
-        df['year'] = [df.index[i].year for i in range(len(df))]
+        df['year'] = [df.index[i].split('/')[2] for i in range(len(df))]
         metric = pd.DataFrame()
 
         # annualized return
