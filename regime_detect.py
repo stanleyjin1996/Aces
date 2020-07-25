@@ -145,6 +145,37 @@ class BackTest:
         self.regime = pd.DataFrame()
         self.switch_points = []
 
+    def periodic_feed(self, data, init_t, days_to_rebalance, days_to_train):
+        """
+        Periodically feed in new data, re-estimate HMM's parameters and predict regimes
+        :param data: Data frame for detecting market regimes
+        :param init_t: Initial t days to initialize the model
+        :param days_to_rebalance: Number of days to re-balance and re-estimate the model periodically
+        :param days_to_train: How many days of data to use to train the model
+        :return: Market regimes for each date
+        :rtypeL: DataFrame
+        """
+
+        # Use initial t days data to initialize the hmm model
+        num_observations = data.shape[0]
+        train_data = data.iloc[:init_t].copy()
+        self.model.train(train_data)
+
+        # Define a DataFrame to save the regime states
+        self.regime = pd.DataFrame(data=0, columns=["regime"], index=data.index)
+        self.regime.loc[:init_t, "regime"] = self.model.predict(train_data)
+
+        # A loop to feed in the new data everyday and re-estimate the model periodically
+        for t in range(init_t, num_observations):
+            # Re-estimate the model
+            if (t - init_t)%days_to_rebalance == 0:
+                train_data = data.iloc[t - days_to_train:t].copy()
+                self.model.train(train_data)
+                states = self.model.predict(train_data.iloc[days_to_train - days_to_rebalance:])
+                self.regime.loc[t - days_to_rebalance:t, "regime"] = states
+
+        return self.regime
+
     def online_step_algorithm(self, data):
         """
         Run the online_step_algorithm
@@ -541,3 +572,5 @@ if __name__ == '__main__':
     regime_data["Adj Close"] = spy.loc[regime_data.index]
     bt.model.plot_in_sample_hidden_states(regime_data)
     print(bt.find_switch_points())
+
+
