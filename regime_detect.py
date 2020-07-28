@@ -8,6 +8,7 @@ from matplotlib import cm, pyplot as plt
 from matplotlib.dates import YearLocator, MonthLocator
 from pypfopt import EfficientFrontier
 from pypfopt import objective_functions
+from copy import deepcopy
 
 
 class HMM:
@@ -15,7 +16,7 @@ class HMM:
     HMM is a class defining the Hidden Markov Model algorithm and its corresponding functions.
     """
 
-    def __init__(self, n_components, n_iter):
+    def __init__(self, n_components, n_iter, random_state=50):
         """
         Initialize class attributes
         :param n_components: Number of hidden states
@@ -23,7 +24,8 @@ class HMM:
         """
         self.n_components = n_components
         self.n_iter = n_iter
-        self.model = GaussianHMM(n_components=self.n_components, n_iter=self.n_iter, covariance_type="full")
+        self.model = GaussianHMM(n_components=self.n_components, n_iter=self.n_iter,
+                                 covariance_type="full", random_state=random_state)
         self.monitor_ = []  # Monitor object used to check the convergence of EM
         self.transmat_ = []  # Matrix of transition probabilities between states
         self.means_ = []  # Mean parameters for each state
@@ -40,48 +42,49 @@ class HMM:
         """
         return np.column_stack([df])
 
-    def train(self, rets):
+    def fit(self, data):
         """
         Train the hmm model
-        :param rets: Returns of one specific index
+        :param data: Assume data is absorption ratio calculated from index data
         """
-        np_rets = self.to_numpy_array(rets)
-        self.model.fit(np_rets)
+        np_data = self.to_numpy_array(data)
+        self.model.fit(np_data)
         # Update class attributes
         self.monitor_ = self.model.monitor_
         self.transmat_ = self.model.transmat_
         self.means_ = self.model.means_
         self.covars_ = self.model.covars_
 
-    def predict(self, rets):
+    def predict(self, data):
         """
         Predict the hidden states
-        :param rets: Returns of one specific index
+        :param data: Assume data is absorption ratio calculated from index data
         :return: Predicted hidden states
         :rtype: array
         """
-        np_rets = self.to_numpy_array(rets)
-        return self.model.predict(np_rets)
+        np_data = self.to_numpy_array(data)
+        return self.model.predict(np_data)
 
-    def predict_prob(self, rets):
+    def predict_proba(self, data):
         """
         Compute the posterior probability for each state in the model
-        :param rets: Returns of one specific index
+        :param data: Assume data is absorption ratio calculated from index data
         :return: posteriors-state-membership probabilities for each sample
         :rtype: array, shape (n_samples, n_components)
         """
 
-        np_rets = self.to_numpy_array(rets)
-        return self.model.predict_proba(np_rets)
+        np_data = self.to_numpy_array(data)
+        return self.model.predict_proba(np_data)
 
-    def score(self, rets):
+    def score(self, data):
         """
         Compute the log probability under the model
-        :param rets: Returns of one specific asset (need to be ndarray)
+        :param data: Assume data is absorption ratio calculated from index data
         :return: Log likelihood
         :rtype: float
         """
-        return self.model.score(rets)
+        np_data = self.to_numpy_array(data)
+        return self.model.score(np_data)
 
     def plot_in_sample_hidden_states(self, df):
         """
@@ -127,8 +130,6 @@ class HMM:
         print("HMM model loaded ")
 
 
-# No look into future, train and predict
-# Adjust weight every time
 class BackTest:
     """
     BackTest is a class defining the back test procedure
@@ -145,36 +146,127 @@ class BackTest:
         self.regime = pd.DataFrame()
         self.switch_points = []
 
-    def periodic_feed(self, data, init_t, days_to_rebalance, days_to_train):
+    def detect_regime(self, data, days_to_train=1000, days_to_rebalance=100):
         """
-        Periodically feed in new data, re-estimate HMM's parameters and predict regimes
-        :param data: Data frame for detecting market regimes
-        :param init_t: Initial t days to initialize the model
-        :param days_to_rebalance: Number of days to re-balance and re-estimate the model periodically
-        :param days_to_train: How many days of data to use to train the model
+        Detect regime and periodically re-estimate HMM's parameters
+        :param data: A DataFrame with absorption ratio for detecting market regimes
+        :param days_to_train: days of data used to train model for each time
+        :param days_to_rebalance: frequency of re-estimate the model
         :return: Market regimes for each date
         :rtypeL: DataFrame
         """
 
         # Use initial t days data to initialize the hmm model
         num_observations = data.shape[0]
-        train_data = data.iloc[:init_t].copy()
-        self.model.train(train_data)
+        train_data = data.iloc[:days_to_train].copy()
+        self.model.fit(train_data)
 
         # Define a DataFrame to save the regime states
         self.regime = pd.DataFrame(data=0, columns=["regime"], index=data.index)
-        self.regime.loc[:init_t, "regime"] = self.model.predict(train_data)
+        self.regime.loc[:days_to_train, "regime"] = self.model.predict(train_data)
 
         # A loop to feed in the new data everyday and re-estimate the model periodically
-        for t in range(init_t, num_observations):
+        for t in range(days_to_train, num_observations):
+            flag = False
+            train_data = data.iloc[t - days_to_train:t].copy()
             # Re-estimate the model
-            if (t - init_t)%days_to_rebalance == 0:
-                train_data = data.iloc[t - days_to_train:t].copy()
-                self.model.train(train_data)
-                states = self.model.predict(train_data.iloc[days_to_train - days_to_rebalance:])
-                self.regime.loc[t - days_to_rebalance:t, "regime"] = states
+            if (t - days_to_train) % days_to_rebalance == 0:
+                old_model = deepcopy(self.model)
+                self.model.fit(train_data)
+                # Check if regime definitions are consistent between old and new model
+                pred_old = old_model.predict(train_data)
+                pred_new = self.model.predict(train_data)
+                if (pred_new == pred_old).sum() < 0.5 * days_to_train:
+                    flag = True
+            # Predict the state and log probability of day t
+            states = self.model.predict(train_data)
+            state_prob = self.model.predict_proba(train_data)[-1]
+            state = states[-1]
+
+            # If the definition of states changes, switch the state
+            if flag:
+                state = abs(1 - state)
+            # If predicted probabilities are not wide enough, don't switch
+            if abs(state_prob[0] - state_prob[1]) < 0.1:
+                state = self.regime.iloc[t - 1]["regime"]
+
+            self.regime.iloc[t]["regime"] = state
 
         return self.regime
+
+    def find_switch_date(self):
+        """
+        Find date when regime switches
+        :return: A list of dates of switch points
+        :rtype: list
+        """
+
+        # Initialize the list
+        self.switch_points = []
+        # Save last day's state
+        prev_state = self.regime.iloc[0]["regime"]
+
+        # Loop over all the dates
+        # If today's state is different from that of yesterday, then save the switch date
+        for index, row in self.regime.iterrows():
+            if prev_state != row["regime"]:
+                self.switch_points.append(index)
+            prev_state = row["regime"]
+
+        return self.switch_points
+
+    def find_switch_index(self):
+        """
+        Find the numerical index when regime switches
+        :return: A list of numerical index in the DataFrame
+        :rtype: list
+        """
+
+        num_observations = self.regime.shape[0]
+        switch_index = [0]
+
+        for i in range(1, num_observations):
+            if self.regime.iloc[i]["regime"] != self.regime.iloc[i - 1]["regime"]:
+                switch_index.append(i)
+
+        switch_index.append(num_observations)
+
+        return switch_index
+
+    def plot_regime_color(self, df, start):
+        """
+        Plot data versus regime
+        :param df: A DataFrame with original time series data and its corresponding regimes
+        :param start: Start index
+        """
+
+        regime_list = self.find_switch_index()
+        y_max = df.max().max()
+        curr_reg = start
+
+        fig, ax = plt.subplots()
+        for i in range(len(regime_list) - 1):
+            if curr_reg == 0:
+                ax.axhspan(0, y_max * 1.2, xmin=regime_list[i] / regime_list[-1],
+                           xmax=regime_list[i + 1] / regime_list[-1],
+                           facecolor='green',
+                           alpha=0.3)
+            else:
+                ax.axhspan(0, y_max * 1.2, xmin=regime_list[i] / regime_list[-1],
+                           xmax=regime_list[i + 1] / regime_list[-1],
+                           facecolor='red',
+                           alpha=0.5)
+            curr_reg = abs(curr_reg - 1)
+
+        fig.set_size_inches(20, 9)
+        for col in df.columns:
+            plt.plot(df[col], label=col)
+        plt.legend()
+        plt.ylabel('value')
+        plt.xlabel('Year')
+        plt.xlim([df.index[0], df.index[-1]])
+        plt.ylim([0, y_max * 1.2])
+        plt.show()
 
     def online_step_algorithm(self, data):
         """
@@ -241,27 +333,6 @@ class BackTest:
 
         return self.regime
 
-    def find_switch_points(self):
-        """
-        Find date when regime switches
-        :return: A list of dates of switch points
-        :rtype: list
-        """
-
-        # Initialize the list
-        self.switch_points = []
-        # Save the last day's state
-        prev_state = self.regime.iloc[0]["regime"]
-
-        # Loop over all the dates
-        # If today's state is different from that of yesterday, then save the switch date
-        for index, row in self.regime.iterrows():
-            if prev_state != row["regime"]:
-                self.switch_points.append(index)
-            prev_state = row["regime"]
-
-        return self.switch_points
-
     @staticmethod
     def fetch_sector(start, end):
         """
@@ -298,6 +369,81 @@ class BackTest:
         return df_price, df_return
 
 
+class AbsorptionRatio:
+    """
+    A class to calculate absorption ratio and its corresponding metrics
+    """
+    def __init__(self, data, spx):
+        """
+        Initialize class attributes
+        :param data: Component of S&P 500
+        :param spx: S&P 500 data
+        """
+
+        self.data = data  # price data
+        self.spx = spx  # sp500
+        self.ar = None  # absorption ratio
+        self.delta = None  # standardized absorption ratio
+
+    def absorption_ratio(self, is_returns=False, lookback=500, halflife=250, num_pc=50):
+        """
+        Compute absorption ratio using returns data
+        :param is_returns: is data return or price
+        :param lookback: number of past days used in computing ar
+        :param halflife: halflife in ewm
+        :param num_pc: number of principal components
+        :return: A DataFrame of absorption ratio
+        :rtype: DataFrame
+        """
+
+        data = self.data
+        if is_returns:
+            ret = data
+        else:
+            ret = np.log(data).diff().dropna()
+
+        ar = []
+        for i in range(lookback, len(ret) + 1):
+            model = PCA(n_components=num_pc).fit(ret[i - lookback:i])
+            pc = pd.DataFrame(model.transform(ret))
+            # variance explained by first n principal components
+            pc_var = pc.ewm(halflife=halflife, min_periods=lookback).var().sum().sum()
+            # variance in original data
+            ret_var = ret.ewm(halflife=halflife, min_periods=lookback).var().sum().sum()
+            # absorption ratio
+            ar.append(pc_var / ret_var)
+
+        ar = pd.DataFrame(ar)
+        ar.index = ret.index[lookback - 1:]
+        ar.columns = ['AR']
+        self.ar = ar
+
+        return ar
+
+    def delta_ar(self, ar):
+        """
+        Calculate standardized absorption ratio
+        :param ar: Absorption ratio data
+        :return: Standardized absorption ratio
+        :rtype: DataFrame
+        """
+        self.delta = ((ar.rolling(15).mean() - ar.rolling(250).mean()) / ar.rolling(250).std()).iloc[250:]
+        return self.delta
+
+    @staticmethod
+    def visualize(ar, spx):
+        """
+        Visualize the time series under different regimes
+        :param ar: Absorption ratio
+        :param spx: S&P 500 price data
+        """
+        df = ar.copy()
+        df = df.join(spx, how='inner')
+        df.columns = ['ar', 'spx']
+        df.ar.plot(label='ar', legend=True)
+        df.spx.plot(secondary_y=True, label='spx', legend=True)
+
+
 class Portfolio:
     """
     Portfolio is a class defining the characteristics of a portfolio
@@ -328,24 +474,6 @@ class Portfolio:
 
         self.value_special = 0  # special portfolio value
         self.value_base = 0  # base portfolio value
-
-    def absorption_ratio(self, lookback=500, halflife=250, num_pc=5):
-        ar = []
-        for i in range(lookback, len(self.ret) + 1):
-            model = PCA(n_components=num_pc).fit(self.ret[i - lookback:i])
-            pc = pd.DataFrame(model.transform(self.ret))
-            # variance explained by first n principal components
-            pc_var = pc.ewm(halflife=halflife, min_periods=lookback).var().sum().sum()
-            # variance in original data
-            ret_var = self.ret.ewm(halflife=halflife, min_periods=lookback).var().sum().sum()
-            # absorption ratio
-            ar.append(pc_var / ret_var)
-
-        ar = pd.DataFrame(ar)
-        ar.index = self.ret.index[lookback - 1:]
-        ar.columns = ['AR']
-
-        return ar
 
     def initialize_ret_cov(self, n=500):
         """
@@ -472,7 +600,7 @@ class Portfolio:
                 holdings1 = special[-1] * self.weights_special.loc[t] / price.loc[t]
                 holdings2 = base[-1] * self.weights_base.loc[t] / price.loc[t]
 
-            # rebalance the portoflios regularly
+            # rebalance the portfolios regularly
             elif i > 0 and i % rebalance == 0:
                 holdings1 = special[-1] * self.weights_special.loc[t] / price.loc[t]
                 holdings2 = base[-1] * self.weights_base.loc[t] / price.loc[t]
@@ -537,40 +665,11 @@ class Portfolio:
 
 
 def main():
-    model = HMM(2, 1000)
-    assets = ["A", "AA", "AAPL", "ABC", "ABT", "ADBE", "ADI", "ADM", "ADP", "ADSK"]
-    stocks = yf.download(tickers=assets, start="2000-01-27", end="2020-07-20")
-    data = stocks["Adj Close"].iloc[2:]
-    spy = yf.download(tickers="SPY", start="2000-01-27", end="2010-07-20")["Adj Close"]
-    p = Portfolio(data, assets)
-    bt = BackTest(model, p)
-    rets = spy.pct_change().dropna()
-    regime_data = bt.online_step_algorithm(rets)
-    print(regime_data)
-
-
-    #df_price, df_return = bt.fetch_sector("2010-01-01", "2020-07-11")
-    #rets = np.column_stack([df_return["XLC"].iloc[1:]])
-    #model.train(rets)
-    #df = pd.DataFrame(data=df_price["XLC"].iloc[1:])
-    #df.columns = ["Adj Close"]
-    #model.plot_in_sample_hidden_states(df, rets)
-    #print(model.score(rets))
+    return
 
 
 if __name__ == '__main__':
-    #main()
-    model = HMM(2, 1000)
-    assets = ["A", "AA", "AAPL", "ABC", "ABT", "ADBE", "ADI", "ADM", "ADP", "ADSK"]
-    stocks = yf.download(tickers=assets, start="2000-01-27", end="2020-07-20")
-    data = stocks["Adj Close"].iloc[2:]
-    spy = yf.download(tickers="SPY", start="2000-01-27", end="2004-07-20")["Adj Close"]
-    p = Portfolio(data, assets)
-    bt = BackTest(model, p)
-    rets = spy.pct_change().dropna()
-    regime_data = bt.online_step_algorithm(rets)
-    regime_data["Adj Close"] = spy.loc[regime_data.index]
-    bt.model.plot_in_sample_hidden_states(regime_data)
-    print(bt.find_switch_points())
+    main()
+
 
 
