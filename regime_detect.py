@@ -577,7 +577,7 @@ class Portfolio:
 
         date = self.ret.index[n - 1:]
         self.weights_special = pd.DataFrame(self.weights_special, columns=self.tickers, index=date)
-        self.weights_base = pd.DataFrame(self.weights_special, columns=self.tickers, index=date)
+        self.weights_base = pd.DataFrame(self.weights_base, columns=self.tickers, index=date)
 
     def construct_portfolio(self, capital=1e6, rebalance=60):
         """
@@ -616,7 +616,7 @@ class Portfolio:
             base.append(value2)
 
         self.value_special = pd.DataFrame(special, columns=['value'], index=price.index)
-        self.value_base = pd.DataFrame(special, columns=['value'], index=price.index)
+        self.value_base = pd.DataFrame(base, columns=['value'], index=price.index)
 
     def visualization(self):
         """
