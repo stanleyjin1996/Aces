@@ -385,7 +385,7 @@ class AbsorptionRatio:
         self.ar = None  # absorption ratio
         self.delta = None  # standardized absorption ratio
 
-    def absorption_ratio(self, is_returns=False, lookback=500, halflife=250, num_pc=50):
+    def absorption_ratio(self, is_returns=False, lookback=500, halflife=250, pc_ratio=1/5):
         """
         Compute absorption ratio using returns data
         :param is_returns: is data return or price
@@ -400,18 +400,26 @@ class AbsorptionRatio:
         if is_returns:
             ret = data
         else:
-            ret = np.log(data).diff().dropna()
+            ret = np.log(data).diff()[1:]
 
         ar = []
-        for i in range(lookback, len(ret) + 1):
-            model = PCA(n_components=num_pc).fit(ret[i - lookback:i])
-            pc = pd.DataFrame(model.transform(ret))
-            # variance explained by first n principal components
-            pc_var = pc.ewm(halflife=halflife, min_periods=lookback).var().sum().sum()
-            # variance in original data
-            ret_var = ret.ewm(halflife=halflife, min_periods=lookback).var().sum().sum()
-            # absorption ratio
-            ar.append(pc_var / ret_var)
+        for i in range(lookback,len(ret)+1):
+            temp_ret = ret[i-lookback:i].dropna(axis=1)
+            num_pc = int(pc_ratio * len(temp_ret.columns))
+            model = PCA(n_components=num_pc).fit(temp_ret)
+            pc = pd.DataFrame(model.transform(temp_ret))
+            #variance explained by first n principal components
+            pc_var = pc.ewm(halflife=halflife,min_periods=lookback).var().sum().sum()
+            #variance in original data
+            ret_var = temp_ret.ewm(halflife=halflife,min_periods=lookback).var().sum().sum()
+            #absorption ratio
+            ar.append(pc_var/ret_var)
+            
+        ar = pd.DataFrame(ar)
+        ar.index = ret.index[lookback-1:]
+        ar.columns = ['AR']
+        self.ar = ar
+        return ar
 
         ar = pd.DataFrame(ar)
         ar.index = ret.index[lookback - 1:]
@@ -442,7 +450,6 @@ class AbsorptionRatio:
         df.columns = ['ar', 'spx']
         df.ar.plot(label='ar', legend=True)
         df.spx.plot(secondary_y=True, label='spx', legend=True)
-
 
 class Portfolio:
     """
@@ -525,34 +532,65 @@ class Portfolio:
         """
         return [dic[i] for i in self.tickers]
 
-    def optimize_weight(self, n=500):
+    def optimize_weights(self, mu, S, method = 'max sharpe', stock_pct = 0.8):
+        '''
+        Different optimizers
+        :param mu: expected return
+        :param S: covariance matrix
+        :param method: optimizer: 'max sharpe' or 'min_variance'
+        :param stock_pct: stock position in portfolio
+        
+        return a list of asset weights
+        '''
+        if method == 'max sharpe':
+            ef = EfficientFrontier(mu, S, weight_bounds=(0, 1))
+            #ef.add_objective(objective_functions.L2_reg, gamma=0.1)
+            ef.add_constraint(lambda w: w[0]+w[1]+w[2]+w[3]+w[4] == stock_pct)
+            ef.add_constraint(lambda w:w[5]+w[6] == 1 - stock_pct)
+            ef.max_sharpe(risk_free_rate=0)
+            
+        elif method == 'min_variance':
+            ef = EfficientFrontier(None, S, weight_bounds=(0,1))
+            ef.add_constraint(lambda w: w[0]+w[1]+w[2]+w[3]+w[4] == stock_pct)
+            ef.add_constraint(lambda w:w[5]+w[6] == 1 - stock_pct)
+            ef.min_volatility()
+        
+        weights = self.to_list(ef.clean_weights())
+        return weights
+
+    def compute_weights(self, n=500, method='max sharpe'):
         """
         Choose optimum weights for each day
         :param n: start computing weights after n days
+        :param method: optimizer
         """
 
         state = self.price['regime'][1:]
         # initialize expected returns and covariance matrix
         self.initialize_ret_cov(n)
+        #determine stock holdings
+        if state[n-1] == 0:
+            stock_pct = 0.8
+        else:
+            stock_pct = 0.2
+
+        
         # determine first weights for special portfolio
-        ef = EfficientFrontier(self.mu_special, self.S_special, weight_bounds=(-1, 1))
-        ef.add_objective(objective_functions.L2_reg, gamma=0.1)
-        ef.max_sharpe(risk_free_rate=0.02)
-        # special weight
-        special = self.to_list(ef.clean_weights())
+        special = self.optimize_weights(self.mu_special, self.S_special, method=method, 
+                                        stock_pct=stock_pct)
         self.weights_special.append(special)
         # determine first weights for baseline portfolio
-        ef = EfficientFrontier(self.mu_base, self.S_base, weight_bounds=(-1, 1))
-        ef.add_objective(objective_functions.L2_reg, gamma=0.1)
-        ef.max_sharpe(risk_free_rate=0.02)
-        # base weight
-        base = self.to_list(ef.clean_weights())
+        base = self.optimize_weights(self.mu_base, self.S_base, method=method, 
+                                     stock_pct=stock_pct)
         self.weights_base.append(base)
+  
         for i, t in zip(range(n, len(state)), self.ret.index[n:]):
             if state[i] == 0:
                 self.date0.append(t)
+                stock_pct = 0.8
             else:
                 self.date1.append(t)
+                stock_pct = 0.2
 
             # no regime shift
             if state[i] == state[i - 1]:
@@ -562,22 +600,18 @@ class Portfolio:
             else:
                 self.update_ret_cov(state=state[i])
                 # update weights for special portfolio
-                ef = EfficientFrontier(self.mu_special, self.S_special, weight_bounds=(-1, 1))
-                ef.add_objective(objective_functions.L2_reg, gamma=0.1)
-                ef.max_sharpe(risk_free_rate=0.02)
-                special = self.to_list(ef.clean_weights())
-                # update weights for baseline portfolio
-                ef = EfficientFrontier(self.mu_base, self.S_base, weight_bounds=(-1, 1))
-                ef.add_objective(objective_functions.L2_reg, gamma=0.1)
-                ef.max_sharpe(risk_free_rate=0.02)
-                base = self.to_list(ef.clean_weights())
-                # store weights
+                special = self.optimize_weights(self.mu_special, self.S_special, method=method, 
+                                                stock_pct=stock_pct)
                 self.weights_special.append(special)
+                # update weights for baseline portfolio
+                base = self.optimize_weights(self.mu_base, self.S_base, method=method, 
+                                             stock_pct=stock_pct)
                 self.weights_base.append(base)
-
+            
         date = self.ret.index[n - 1:]
         self.weights_special = pd.DataFrame(self.weights_special, columns=self.tickers, index=date)
         self.weights_base = pd.DataFrame(self.weights_base, columns=self.tickers, index=date)
+
 
     def construct_portfolio(self, capital=1e6, rebalance=60):
         """
@@ -618,15 +652,7 @@ class Portfolio:
         self.value_special = pd.DataFrame(special, columns=['value'], index=price.index)
         self.value_base = pd.DataFrame(base, columns=['value'], index=price.index)
 
-    def visualization(self):
-        """
-        Plot and compare special and base portfolios
-        """
 
-        df = pd.DataFrame()
-        df['special'] = self.value_special['value']
-        df['base'] = self.value_base['value']
-        df.plot()
 
     @staticmethod
     def cal_metric(portfolio):
@@ -662,6 +688,7 @@ class Portfolio:
         metric['MDD'] = df.groupby('year')['DD'].min()
 
         return metric[['annual return', 'annual vol', 'Sharpe', 'MDD']]
+
 
 
 def main():
